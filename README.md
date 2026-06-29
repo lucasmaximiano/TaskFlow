@@ -11,7 +11,7 @@ O objetivo deste projeto é demonstrar a construção de uma API orientada por e
 - .NET 8
 - ASP.NET Core Web API
 - Entity Framework Core
-- SQLite ou InMemory
+- InMemory
 - OpenAPI 3.0
 - Swagger
 - xUnit
