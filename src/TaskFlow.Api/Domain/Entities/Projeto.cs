@@ -12,4 +12,3 @@ namespace TaskFlow.Api.Domain.Entities
         public List<Tarefa> Tarefas { get; set; } = [];
     }
 }
-}
