@@ -1,0 +1,435 @@
+openapi: 3.0.3
+
+info:
+  title: TaskFlow API
+  version: 1.0.0
+  description: API REST para gerenciamento de projetos e tarefas seguindo Specification-Driven Development.
+
+servers:
+  - url: http://localhost:5000
+    description: Local
+
+tags:
+  - name: Projetos
+  - name: Tarefas
+
+paths:
+  /projetos:
+    post:
+      tags: [Projetos]
+      summary: Criar projeto
+      operationId: criarProjeto
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CriarProjetoRequest'
+      responses:
+        '201':
+          description: Projeto criado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjetoResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+
+    get:
+      tags: [Projetos]
+      summary: Listar projetos
+      operationId: listarProjetos
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/ProjetoStatus'
+      responses:
+        '200':
+          description: Lista de projetos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProjetoResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+
+  /projetos/{id}:
+    get:
+      tags: [Projetos]
+      summary: Buscar projeto por ID
+      operationId: buscarProjetoPorId
+      parameters:
+        - $ref: '#/components/parameters/ProjetoId'
+      responses:
+        '200':
+          description: Projeto encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjetoResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    patch:
+      tags: [Projetos]
+      summary: Atualizar projeto
+      operationId: atualizarProjeto
+      parameters:
+        - $ref: '#/components/parameters/ProjetoId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AtualizarProjetoRequest'
+      responses:
+        '200':
+          description: Projeto atualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjetoResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          description: Não é possível arquivar projeto com tarefas em andamento
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+
+  /projetos/{id}/tarefas:
+    post:
+      tags: [Tarefas]
+      summary: Criar tarefa em um projeto
+      operationId: criarTarefa
+      parameters:
+        - $ref: '#/components/parameters/ProjetoId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CriarTarefaRequest'
+      responses:
+        '201':
+          description: Tarefa criada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TarefaResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          description: Não é permitido criar tarefa em projeto arquivado
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+
+    get:
+      tags: [Tarefas]
+      summary: Listar tarefas do projeto
+      operationId: listarTarefasDoProjeto
+      parameters:
+        - $ref: '#/components/parameters/ProjetoId'
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/TarefaStatus'
+        - name: priority
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/TarefaPriority'
+      responses:
+        '200':
+          description: Lista de tarefas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TarefaResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /tarefas/{id}:
+    patch:
+      tags: [Tarefas]
+      summary: Atualizar tarefa
+      operationId: atualizarTarefa
+      parameters:
+        - $ref: '#/components/parameters/TarefaId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AtualizarTarefaRequest'
+      responses:
+        '200':
+          description: Tarefa atualizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TarefaResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          description: Transição de status inválida
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+
+    delete:
+      tags: [Tarefas]
+      summary: Excluir tarefa
+      operationId: excluirTarefa
+      parameters:
+        - $ref: '#/components/parameters/TarefaId'
+      responses:
+        '204':
+          description: Tarefa excluída
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          description: Apenas tarefas pendentes podem ser excluídas
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+
+components:
+  parameters:
+    ProjetoId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+    TarefaId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+  responses:
+    ValidationError:
+      description: Erro de validação
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ValidationProblemDetails'
+
+    NotFound:
+      description: Recurso não encontrado
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+
+  schemas:
+    ProjetoStatus:
+      type: string
+      enum:
+        - active
+        - archived
+
+    TarefaStatus:
+      type: string
+      enum:
+        - pending
+        - in_progress
+        - done
+
+    TarefaPriority:
+      type: string
+      enum:
+        - low
+        - medium
+        - high
+
+    CriarProjetoRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          maxLength: 100
+          example: Plataforma TaskFlow
+        description:
+          type: string
+          nullable: true
+          example: Projeto para gerenciamento colaborativo de tarefas
+
+    AtualizarProjetoRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 100
+          example: Plataforma TaskFlow v2
+        description:
+          type: string
+          nullable: true
+          example: Nova descrição do projeto
+        status:
+          $ref: '#/components/schemas/ProjetoStatus'
+
+    CriarTarefaRequest:
+      type: object
+      required:
+        - title
+        - priority
+      properties:
+        title:
+          type: string
+          maxLength: 200
+          example: Criar contrato OpenAPI
+        description:
+          type: string
+          nullable: true
+          example: Definir endpoints, schemas e erros da API
+        priority:
+          $ref: '#/components/schemas/TarefaPriority'
+
+    AtualizarTarefaRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          maxLength: 200
+          example: Revisar contrato OpenAPI
+        description:
+          type: string
+          nullable: true
+          example: Revisar consistência dos schemas e responses
+        status:
+          $ref: '#/components/schemas/TarefaStatus'
+        priority:
+          $ref: '#/components/schemas/TarefaPriority'
+
+    ProjetoResponse:
+      type: object
+      required:
+        - id
+        - name
+        - status
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          maxLength: 100
+        description:
+          type: string
+          nullable: true
+        status:
+          $ref: '#/components/schemas/ProjetoStatus'
+        createdAt:
+          type: string
+          format: date-time
+
+    TarefaResponse:
+      type: object
+      required:
+        - id
+        - title
+        - status
+        - priority
+        - createdAt
+        - projectId
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+          maxLength: 200
+        description:
+          type: string
+          nullable: true
+        status:
+          $ref: '#/components/schemas/TarefaStatus'
+        priority:
+          $ref: '#/components/schemas/TarefaPriority'
+        createdAt:
+          type: string
+          format: date-time
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
+          readOnly: true
+        projectId:
+          type: string
+          format: uuid
+
+    ProblemDetails:
+      type: object
+      properties:
+        type:
+          type: string
+          nullable: true
+          example: https://tools.ietf.org/html/rfc9110#section-15.5.1
+        title:
+          type: string
+          nullable: true
+          example: Regra de negócio violada
+        status:
+          type: integer
+          example: 422
+        detail:
+          type: string
+          nullable: true
+          example: Não é possível arquivar um projeto com tarefas em andamento.
+        instance:
+          type: string
+          nullable: true
+          example: /projetos/3fa85f64-5717-4562-b3fc-2c963f66afa6
+
+    ValidationProblemDetails:
+      type: object
+      properties:
+        type:
+          type: string
+          nullable: true
+          example: https://tools.ietf.org/html/rfc9110#section-15.5.1
+        title:
+          type: string
+          nullable: true
+          example: One or more validation errors occurred.
+        status:
+          type: integer
+          example: 400
+        errors:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+          example:
+            name:
+              - O campo name é obrigatório.
